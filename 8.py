@@ -165,7 +165,22 @@ model.classifier = classifier
 # try out first. Make sure you are only training the classifier and the
 # parameters for the features part are frozen.
 
+# Implement a function for the validation pass
+def validation(model, testloader, criterion):
+    test_loss = 0
+    accuracy = 0
+    for images, labels in testloader:
 
+        images.resize_(images.shape[0], 784)
+
+        output = model.forward(images)
+        test_loss += criterion(output, labels).item()
+
+        ps = torch.exp(output)
+        equality = (labels.data == ps.max(dim=1)[1])
+        accuracy += equality.type(torch.FloatTensor).mean()
+    
+    return test_loss, accuracy
 
 # TODO: Train a model with a pre-trained network
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -175,42 +190,47 @@ optimizer = optim.Adam(model.classifier.parameters(), lr=0.001)
 
 model.to(device)
 
+
+epochs = 2
 steps = 0
 running_loss = 0
-print_every=40
-for ii, (inputs, labels) in enumerate(trainloader):
-    steps += 1
-    # Move input and label tensors to the GPU
-    inputs, labels = inputs.to(device), labels.to(device)
-    start = time.time()
-    outputs = model.forward(inputs)
-    loss = criterion(outputs, labels)
-    loss.backward()
-    optimizer.step()
-    running_loss += loss.item()
-
-    if steps % print_every == 0:
-        # Model in inference mode, dropout is off
-        model.eval()
+print_every = 40
+for e in range(epochs):
+    model.train()
+    for images, labels in trainloader:
+        steps += 1
+        images, labels = images.to(device), labels.to(device) 
         
-        # Turn off gradients for validation, will speed up inference
-        with torch.no_grad():
-            test_loss, accuracy = validation(model, testloader, criterion)
+        # Flatten images into a 224x224 = 50167   long vector
+        #images.resize_(images.size()[0], 50176)
         
-        print("Epoch: {}/{}.. ".format(e+1, epochs),
-              "Training Loss: {:.3f}.. ".format(running_loss/print_every),
-              "Test Loss: {:.3f}.. ".format(test_loss/len(testloader)),
-              "Test Accuracy: {:.3f}".format(accuracy/len(testloader)))
+        optimizer.zero_grad()
         
-        running_loss = 0
+        # from IPython.core import debugger; debug = debugger.Pdb().set_trace; debug()
+        # from IPython import embed; embed()
+        output = model.forward(images)
+        loss = criterion(output, labels)
+        loss.backward()
+        optimizer.step()
         
-        # Make sure dropout and grads are on for training
-        model.train()
-
-    if ii==4:
-        break
-print(f"Device = {device}; Time per batch: {(time.time() - start)/3:.3f} seconds")
-
-
+        running_loss += loss.item()
+        
+        if steps % print_every == 0:
+            # Make sure network is in eval mode for inference
+            model.eval()
+            
+            # Turn off gradients for validation, saves memory and computations
+            with torch.no_grad():
+                test_loss, accuracy = validation(model, testloader, criterion)
+                
+            print("Epoch: {}/{}.. ".format(e+1, epochs),
+                  "Training Loss: {:.3f}.. ".format(running_loss/print_every),
+                  "Test Loss: {:.3f}.. ".format(test_loss/len(testloader)),
+                  "Test Accuracy: {:.3f}".format(accuracy/len(testloader)))
+            
+            running_loss = 0
+            
+            # Make sure training is back on
+            model.train()
 
 
