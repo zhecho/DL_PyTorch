@@ -28,7 +28,7 @@
 
 import time
 import matplotlib.pyplot as plt
-
+from datetime import datetime
 import torch
 from torch import nn
 from torch import optim
@@ -196,6 +196,7 @@ steps = 0
 running_loss = 0
 print_every = 40
 for e in range(epochs):
+    start_ts = datetime.now()
     model.train()
     for images, labels in trainloader:
         steps += 1
@@ -222,11 +223,12 @@ for e in range(epochs):
             # Turn off gradients for validation, saves memory and computations
             with torch.no_grad():
                 test_loss, accuracy = validation(model, testloader, criterion)
-                
+                        
             print("Epoch: {}/{}.. ".format(e+1, epochs),
                   "Training Loss: {:.3f}.. ".format(running_loss/print_every),
                   "Test Loss: {:.3f}.. ".format(test_loss/len(testloader)),
-                  "Test Accuracy: {:.3f}".format(accuracy/len(testloader)))
+                  "Test Accuracy: {:.3f}".format(accuracy/len(testloader)),
+                  "Runtime: {}".format(datetime.now() - start_ts), )
             
             running_loss = 0
             
