@@ -67,7 +67,7 @@ train_data = datasets.ImageFolder(data_dir + '/train', transform=train_transform
 test_data = datasets.ImageFolder(data_dir + '/test', transform=test_transforms)
 
 trainloader = torch.utils.data.DataLoader(train_data, batch_size=64, shuffle=True)
-testloader = torch.utils.data.DataLoader(test_data, batch_size=32)
+testloader = torch.utils.data.DataLoader(test_data, batch_size=64)
 
 # We can load in a model such as
 # [DenseNet](http://pytorch.org/docs/0.3.0/torchvision/models.html#id5). Let's
@@ -171,7 +171,7 @@ def validation(model, testloader, criterion):
     accuracy = 0
     for images, labels in testloader:
 
-        images.resize_(images.shape[0], 784)
+        # images.resize_(images.shape[0], 784)
 
         output = model.forward(images)
         test_loss += criterion(output, labels).item()
